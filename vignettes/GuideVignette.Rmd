@@ -1,0 +1,89 @@
+---
+title: "Guide d'utilisation ScoutMRMBuilder"
+author:
+- name: Rémy DE BONI
+  affiliation: URM 5280
+  email: remy.deboni@gmail.com
+
+package: ScoutMRMBuilder
+output:
+  BiocStyle::html_document
+abstract: |
+  Guide d'utilisation de l'algortihme ScoutMRMBuilder qui permet de creer des méthode scout-MRM à partir de spectres obtenus en analyse haute résolution (DIA ou DDA)
+vignette: |
+  %\VignetteIndexEntry{Guide d'utilisation ScoutMRMBuilder}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+```{r chargement des packages, echo=FALSE, include=FALSE}
+library(Spectra)
+library(MsBackendMgf)
+library(ScoutMRMBuilder)
+```
+
+# Importer les spectres
+La première étape consiste a importer les spectres obtenus en HRMS. Pour l'exemple un fichier peut-être trouver dans le package au format ".mgf".
+```{r chargement des spectres,message=FALSE}
+fls <- system.file("extdata/Spectra_Neg_liver.mgf", package = "ScoutMRMBuilder")
+Spectra_data <- Spectra(fls,source= MsBackendMgf())
+```
+Ce fichier contient 391 spectres MS/MS avec l'intensité des précurseur et les temps de rétention de chaque spectre (inforamtion nécessaire pour la suite)
+```{r spectres inforatmion, message=FALSE}
+Spectra_data
+head(Spectra_data$rtime)
+head(Spectra_data$precursorIntensity)
+```
+Une représentation graphique m/z précursueur en fonction du temps de rétention peut-être obtenue grâce à la fonction `Viz_spectra_mz_rt()`.
+```{r viz spectra data,message=FALSE,warning=FALSE}
+Viz_spectra_mz_rt(Spectra_data,peak_id=TRUE)
+```
+
+# Génération des paires d'ions
+L'étape d'après consiste a générer des paires d'ions pour chaque spectre (m/z precursor - m/z fragment). La fonction `Generate_ions_pairs()` permet de générer ces paires, l'argument `Pairs_by_precursor` permet de choisir le nombre de paires maximum pur chaque précurseur.
+```{r paires d ions,message=FALSE }
+Paires_ions <- Generate_ions_pairs(Spectrum = Spectra_data, Pairs_by_precursor = 3)
+head(Paires_ions)
+``` 
+Cette fonction nous renvoie un tableau avec "CPname" le nom du spectre, les m/z précurseur et fragment, leur intensité respective et le temps de rétention en secondes et en minutes.
+
+# Recherche des scouts
+Pour rechercher les composés scouts dans les paires d'ions. il faut: 
+(i) Charger une base de données avec les transitions des scouts contenants aussi les paramètres optimaux pour les transitions. Un exemple est fournit ici avec les transitions des NAPS (sans et avec adduit HCOO-/CH3COO-) en polarité négative.
+(ii) Comparer les paires d'ions de la base de données a ceux obtenus grâce aux spectres expérimentales par l'intermédiare de la fonction `Scout_Search`.
+```{r recherche scout,message=FALSE,results='hide'}
+database_scout <- read.csv(system.file("extdata/NAPS_NEG_DATABASE.csv", package = "ScoutMRMBuilder"),sep=";")
+Scout_trouve <- Scout_Search(database_scout = database_scout, Ion_pairs = Paires_ions, tolerance_MS = 0.01 )
+```
+Cette fonction retourne la liste des scouts identifiés dans les données.
+```{r,echo=FALSE}
+head(Scout_trouve)
+```
+
+La fonction `Viz_spectra_mz_rt_with_Scout()` permet de visualiser les scouts dans nos données. On voit que l'on détecte les ions monoisotpiques et aussi des adduits.
+```{r, viz Scout,message=FALSE ,warning=FALSE}
+Viz_spectra_mz_rt_with_Scout(Paires_ions,Scout_trouve)
+```
+
+Pour la suite, on travaillera que avec les ions mono-isotopiques pour construire la méthode Scout-MRM.
+
+# Création de la méthode SCOUT-MRM
+Une fois les scouts identifiés, la prochaine étape consiste a créer la méthode Scout-MRM, pour cela plusieurs paramètres sont disponibles.
+
+Paramètres   | Utilité
+------- | -----
+limitation_transi_group | Nombre de transtions par groupe scout
+chooseSMRM  | Choix des précurseurs pour les transitions "max" les plus intenses et "min" les moins intenses
+treshold_detection | seuil de détection des scouts
+DW.Scout | Dwell time pour les scouts
+polarity | Polarité pour le calcul des paramètres (CE, CXP, DP, EP) 0 négatif et 1 positif. 
+```{r creation methode, message=FALSE}
+Methode <- Build_ScoutMRM_method(Scout_trouve[1:17,],Paires_ions,limitation_transi_group = 150,chooseSMRM = "max",treshold_detection=2000,DW.Scout=10,polarity = 0)
+
+```
+
+
+# Session info
+
+```{r sessionInfo, echo=FALSE}
+sessionInfo()
+```
