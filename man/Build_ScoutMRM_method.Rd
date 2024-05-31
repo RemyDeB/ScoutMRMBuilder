@@ -2,36 +2,36 @@
 % Please edit documentation in R/Create_ScoutMRM_method.R
 \name{Build_ScoutMRM_method}
 \alias{Build_ScoutMRM_method}
-\title{a function to create Scout MRM method than can be directly copy paste in SCIEX OS}
+\title{Crée une méthode Scout MRM pouvant être directement copiée et collée dans SCIEX OS}
 \usage{
 Build_ScoutMRM_method(
   Scout_Data_frame,
   Transi_MRM,
   limitation_transi_group = 100,
-  chooseSMRM = c("max", "min"),
+  chooseSMRM = c("max", "min", "all"),
   polarity = c(0, 1),
   treshold_detection = 2000,
   DW.Scout = 10
 )
 }
 \arguments{
-\item{Scout_Data_frame}{Dtaframe des scouts détectés}
+\item{Scout_Data_frame}{Dataframe des scouts détectés}
 
-\item{Transi_MRM}{dataframe des paires d'ions détectés dans les spectres initiaux \code{\link[=Generate_ions_pairs]{Generate_ions_pairs()}}}
+\item{Transi_MRM}{Dataframe des paires d'ions détectés dans les spectres initiaux (générées par la fonction \code{\link[=Generate_ions_pairs]{Generate_ions_pairs()}})}
 
-\item{limitation_transi_group}{nombre de transtions par groupe}
+\item{limitation_transi_group}{Nombre de transitions par groupe}
 
-\item{chooseSMRM}{Select witch precursor while be selected most intense : "max", less intense : "min" or all precursor "all"}
+\item{chooseSMRM}{Sélectionne quel précurseur sera choisi : le plus intense ("max"), le moins intense ("min") ou tous les précurseurs ("all")}
 
-\item{polarity}{polarité pour le calcul des énergie (CE, DP, EP, CXP) 0 négatif, 1 positif}
+\item{polarity}{Polarité pour le calcul des énergies (CE, DP, EP, CXP) : 0 pour négatif, 1 pour positif}
 
 \item{treshold_detection}{Seuil de détection des scouts}
 
-\item{DW.Scout}{dwell time des scouts}
+\item{DW.Scout}{Temps de séjour des scouts}
 }
 \value{
-a method file than can directly be copy paste in SCIEX OS
+Un fichier de méthode pouvant être directement copié et collé dans SCIEX OS
 }
 \description{
-a function to create Scout MRM method than can be directly copy paste in SCIEX OS
+Crée une méthode Scout MRM pouvant être directement copiée et collée dans SCIEX OS
 }

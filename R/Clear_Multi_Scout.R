@@ -18,15 +18,15 @@ Clear_Scout <- function(df.Match){
     if(length(Ordre.elution.manquant)==0){
       return(df.Match)
     }
-    #on recupère les données où ils y a un doute sur le scout
+    #on recupere les donnees ou ils y a un doute sur le scout
     Donnee.manquante <- lapply(1:length(Ordre.elution.manquant),function(x){
       df.Match[df.Match$scout==Ordre.elution.manquant[x],]
 
     })
     Donnee.manquante <- do.call(rbind,Donnee.manquante)
     Rt.unique <- unique(Scout.unique$rt.minutes)
-    if(is.null(Rt.unique)){stop("Pas de scout unique, revoir données scouts")}
-    #elimination composé qui ont un RT trop bas pour un ordre d'élution trop haut
+    if(is.null(Rt.unique)){stop("Pas de scout unique, revoir donnees scouts")}
+    #elimination compose qui ont un RT trop bas pour un ordre d'elution trop haut
     compose_a_retirer =c()
     for (i in 1:length(Rt.unique)){
       RT.seuil <- Rt.unique[i]

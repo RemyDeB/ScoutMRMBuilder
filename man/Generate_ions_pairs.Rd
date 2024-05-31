@@ -7,16 +7,13 @@
 Generate_ions_pairs(Spectrum, Pairs_by_precursor = 3)
 }
 \arguments{
-\item{Spectrum}{Un object spectra}
+\item{Spectrum}{Un objet spectra qui contient les données de spectres de masse}
 
-\item{Pairs_by_precursor}{nombre de paires d'ions par précurseur}
+\item{Pairs_by_precursor}{Nombre de paires d'ions par précurseur (par défaut 3)}
 }
 \value{
-un data frame avec les paires d'ions
+Un data frame avec les paires d'ions contenant les informations sur le précurseur et les ions produits
 }
 \description{
 Génère les paires d'ions
-}
-\examples{
-Generate_ions_pairs(Spectra_data,Pairs_by_precursor = 3)
 }
