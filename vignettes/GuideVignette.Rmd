@@ -76,9 +76,15 @@ chooseSMRM  | Choix des précurseurs pour les transitions "max" les plus intense
 treshold_detection | seuil de détection des scouts
 DW.Scout | Dwell time pour les scouts
 polarity | Polarité pour le calcul des paramètres (CE, CXP, DP, EP) 0 négatif et 1 positif. 
-```{r creation methode, message=FALSE}
-Methode <- Build_ScoutMRM_method(Scout_trouve[1:17,],Paires_ions,limitation_transi_group = 150,chooseSMRM = "max",treshold_detection=2000,DW.Scout=10,polarity = 0)
+```{r creation methode SCOUT-MRM, message=FALSE}
+Methode_Scout_MRM <- Build_ScoutMRM_method(Scout_trouve[1:17,],Paires_ions,limitation_transi_group = 150,chooseSMRM = "max",treshold_detection=2000,DW.Scout=10,polarity = 0)
 
+```
+
+# création méthode MRM classique
+Le prmier paramètre est pour enlever les scouts des transitions MRM potentielles.
+```{r creation methode MRM}
+methode_MRM <- Build_MRM_method(Scout_trouve$CPname,Paires_ions,nombre_transi=200,chooseSMRM = "max",polarity = 0)
 ```
 
 
