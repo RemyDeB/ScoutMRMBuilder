@@ -1,4 +1,4 @@
-This repository is a copy of the [gitlab] {https://gitlab.com/chemod/scout_mrm}
+This repository is a copy of the [gitlab](https://gitlab.com/chemod/scout_mrm)
 
 # Scout-MRM Builder
 
