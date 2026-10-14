@@ -2,20 +2,26 @@
 % Please edit documentation in R/Scout_Search.R
 \name{Scout_Search}
 \alias{Scout_Search}
-\title{Trouve les scouts dans les paires d'ions basés sur les m/z précurseurs, fragment et les ordres d'élution}
+\title{Identify scout transitions from a database within detected ion pairs}
 \usage{
-Scout_Search(database_scout, Ion_pairs, tolerance_MS = 0.01)
+Scout_Search(database_scout, Ion_pairs, ppm_Q1 = 10, ppm_Q3 = 10, Show = FALSE)
 }
 \arguments{
-\item{database_scout}{Base de données des scouts}
+\item{database_scout}{Data.frame containing known scout transitions
+Must include Q1.Mass, Q3.Mass, Name
+Optional: DP, EP, CE, CXP, Order}
 
-\item{Ion_pairs}{Paires d'ions détectées dans les spectres issus de la fonction \code{\link[=Generate_ions_pairs]{Generate_ions_pairs()}}}
+\item{Ion_pairs}{Data.frame from Generate_ions_pairs()}
 
-\item{tolerance_MS}{Tolérance sur le rapport m/z des précurseurs et fragments}
+\item{ppm_Q1}{PPM tolerance for precursor m/z}
+
+\item{ppm_Q3}{PPM tolerance for fragment m/z}
+
+\item{Show}{Logical. Print progress messages.}
 }
 \value{
-Un dataframe avec les scouts identifiés
+A data.frame of matched scout transitions (possibly empty)
 }
 \description{
-Trouve les scouts dans les paires d'ions basés sur les m/z précurseurs, fragment et les ordres d'élution
+Identify scout transitions from a database within detected ion pairs
 }

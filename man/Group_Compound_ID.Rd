@@ -2,16 +2,16 @@
 % Please edit documentation in R/Create_ScoutMRM_method.R
 \name{Group_Compound_ID}
 \alias{Group_Compound_ID}
-\title{Mettre en forme les CompoundID pour les groupes}
+\title{Create unique CompoundID values inside each group}
 \usage{
 Group_Compound_ID(df.transi)
 }
 \arguments{
-\item{df.transi}{Dataframe des transitions}
+\item{df.transi}{Data frame of transitions.}
 }
 \value{
-Dataframe avec les CompoundID mis en forme
+Data frame with formatted CompoundID values.
 }
 \description{
-Mettre en forme les CompoundID pour les groupes
+Create unique CompoundID values inside each group
 }

@@ -1,0 +1,98 @@
+---
+title: "Scout MRM Builder user guide"
+package: ScoutMRMbuilder
+output:
+  BiocStyle::html_document:
+    toc_float: true
+vignette: >
+  %\VignetteIndexEntry{Scout MRM Builder user guide}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+  %\VignettePackage{ScoutMRMBuilder}
+  %\VignetteDepends{ScoutMRMBuilder,Spectra,MsBackendMsp,BiocStyle,BiocParallel}
+  %\VignetteKeywords{mass spectrometry, metabolomics, targeted analysis}
+# bibliography: references.bib
+# csl: biomed-central.csl
+---
+
+```{r biocstyle, echo = FALSE, results = "asis" }
+BiocStyle::markdown()
+```
+
+
+**Authors**: Rémy De Boni, Yohann Clement<br />
+**Compiled**: `r date()`
+
+
+```{r init, message = FALSE, echo = FALSE, results = "hide", warning=FALSE}
+library(BiocStyle)
+library(ScoutMRMBuilder)
+library(Spectra)
+library(MsBackendMsp)
+library(BiocParallel)
+register(SerialParam())
+```
+
+# Introduction
+
+# Package usage
+## Data import
+*ScoutMRMBuilder* can be used with spectrum from DIA or DDA spectra in every file format than can be read with *Spectra* package. For demonstration purpose we will use spectra collected by DDA acquisition on Zeno TOF 7600 on controle quality sample of pig biopsy in ischemia-reperfusion injury.
+```{r load data,message=FALSE}
+# Get th full path of .msp file and .csv file 
+fls <- dir(system.file("extdata", package = "ScoutMRMBuilder"), full.names = TRUE,recursive = TRUE)
+
+#Load .mgf file in a Spectra object
+Spectra_data <- Spectra(fls[2],source= MsBackendMsp())
+
+#Load .csv file database of scout 
+Scout_DB <- read.csv(fls[1],sep=";")
+```
+
+`r length(Spectra_data)` spectra have been collected in untargeted data with require inforamtion (retention time and precursor intensity). Collected spectra can be look in mz-rt dimension using `Viz_spectra_mz_rt()` function. 
+
+```{r viz spectra data,message=FALSE,warning=FALSE}
+Viz_spectra_mz_rt(Spectra_data,feature_id =TRUE)
+```
+
+## Ion pairs generation
+Next, ion pairs can be generated using `Generate_ions_pairs()` with n pairs for each precursor, in this case 3 ion pairs will be generated.
+```{r ion pairs,message=FALSE }
+Paires_ions <- Generate_ions_pairs(Spectrum = Spectra_data, pairs_per_precursor = 3)
+head(Paires_ions)
+``` 
+
+## Scout search
+
+Once ion pairs are generated, scout compounds are search using `Scout_Search()` with a tolerance of 10 ppm on precursor and fragments ions.  
+```{r search scout,message=FALSE,results='hide'}
+Scout_trouve <- Scout_Search(database_scout = Scout_DB, Ion_pairs = Paires_ions, ppm_Q1 = 10, ppm_Q3 = 10 )
+```
+
+`r nrow(Scout_trouve)` scouts have been found in ions pairs. And can be visualize using `Viz_spectra_mz_rt_with_Scout()` function
+```{r, viz Scout,message=FALSE ,warning=FALSE}
+Viz_spectra_mz_rt_with_Scout(Paires_ions,Scout_trouve)
+```
+
+
+## StMRM method creation
+
+Finaly, StMRM method(s) can be build. 
+
+Paramètres   | Usage
+------- | -----
+limitation_transi_group | Number of transitions per group
+chooseSMRM  | Select precursor most intense "max" less intense "min" or all precursors "all"
+treshold_detection | Scout treshold
+DW.Scout | Dwell time for scout transition
+polarity | Polarity for targeted analysis used for compute CE CXP DP & EP (0 NEG et 1 POS)
+```{r creation methode SCOUT-MRM, message=FALSE}
+Methode_Scout_MRM <- Build_ScoutMRM_method(Scout_trouve[-c(26:38),],Paires_ions,limitation_transi_group = 200,chooseSMRM = "all",treshold_detection=200,DW.Scout=10,polarity = 1)
+
+```
+
+
+# Session info
+```{r sessionInfo, echo=FALSE}
+sessionInfo()
+```

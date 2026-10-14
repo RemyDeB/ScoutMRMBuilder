@@ -2,18 +2,18 @@
 % Please edit documentation in R/Viz_Spectra_information.R
 \name{Viz_spectra_mz_rt_with_Scout}
 \alias{Viz_spectra_mz_rt_with_Scout}
-\title{Visualisation des scouts dans les données}
+\title{Visualization of scout features overlaid on precursor ions}
 \usage{
 Viz_spectra_mz_rt_with_Scout(data, Scout)
 }
 \arguments{
-\item{data}{données sur les paires d'ions}
+\item{data}{A data frame containing ion pair results.}
 
-\item{Scout}{données sur les scouts}
+\item{Scout}{A data frame containing scout search results.}
 }
 \value{
-un graphique plotly
+An interactive plotly scatter plot.
 }
 \description{
-Visualisation des scouts dans les données
+Overlay identified scout ions on top of all detected precursor features.
 }

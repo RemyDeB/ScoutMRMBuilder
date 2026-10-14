@@ -1,69 +1,112 @@
-
-#' Visualisation des données
+#' Visualization of detected precursor ions
 #'
-#' @param data un Spectra object
-#' @param peak_id Affiche le nom des spectres
+#' @description
+#' Interactive visualization of MS precursor ions in an m/z vs retention time space.
 #'
-#' @return un graphique plotly
+#' @param data A Spectra object containing precursor metadata.
+#' @param feature_id Logical. Display feature identifiers as tooltip labels if TRUE.
+#' @param size Logical. Use precursor intensity to scale marker size if TRUE.
+#'
+#' @return An interactive plotly scatter plot.
 #' @export
-#'
-Viz_spectra_mz_rt <- function(data,peak_id=FALSE){
+Viz_spectra_mz_rt <- function(data, feature_id = FALSE, size = FALSE) {
 
-  PrecursorIntensity <- data[["precursorIntensity"]]
-  RetentionTime <- data[["rtime"]]
-  PrecursorMz <- data[["precursorMz"]]
-  if (peak_id == TRUE){
-    numpeak <- data[["peak_id"]]
-    data_plot <- as.data.frame(cbind(PrecursorMz,
-                                     PrecursorIntensity,
-                                     RetentionTime,
-                                     numpeak))
-  }
-  data_plot <- as.data.frame(cbind(PrecursorMz,
-                                   PrecursorIntensity,
-                                   RetentionTime
-                                ))
+  required_data <- c("precursorIntensity", "rtime", "precursorMz", "feature_id")
+  if (!all(required_data %in% spectraVariables(data)))
+    stop("Missing required variables in 'data'. Expected: ", paste(required_data, collapse = ", "))
 
-  t <- plotly::plot_ly()
-  if (peak_id == TRUE){
-    t <- plotly::add_trace(t,data_plot,x=as.double(data_plot$RetentionTime),y=as.double(data_plot$PrecursorMz),mode = 'markers',type = 'scatter',size=as.double(data_plot$PrecursorIntensity),text=data_plot$numpeak)
-    t <- plotly::layout(t,xaxis = list(title = 'Retention time'),
-                        yaxis = list(title = 'm/z precursor'))
-    return(t)
+
+  df <- data.frame(
+    mz = data[["precursorMz"]],
+    rt = data[["rtime"]] / 60,
+    intensity = data[["precursorIntensity"]],
+    stringsAsFactors = FALSE
+  )
+
+  if (!size) df$intensity <- 7
+
+  if (feature_id) {
+    if (!"feature_id" %in% spectraVariables(data)) {
+      stop("feature_id is TRUE but 'feature_id' variable is missing in 'data'.")
+    }
+    df$label <- data[["feature_id"]]
   }
-  t <- plotly::add_trace(t,data_plot,x=as.double(data_plot$RetentionTime),y=as.double(data_plot$PrecursorMz),mode = 'markers',type = 'scatter',size=as.double(data_plot$PrecursorIntensity))
-  t <- plotly::layout(t,xaxis = list(title = 'Retention time'),
-                      yaxis = list(title = 'm/z precursor'))
-  return(t)
+
+  p <- plotly::plot_ly(
+    data = df,
+    x = ~rt, y = ~mz,
+    type = "scatter", mode = "markers",
+    marker = list(
+      color = "black",
+      size = ~as.double(intensity),
+      line = list(color = "black")
+    ),
+    text = if (feature_id) ~label else NULL
+  )
+
+  p <- plotly::layout(
+    p,
+    xaxis = list(title = "Retention time (min)"),
+    yaxis = list(title = "m/z")
+  )
+
+  return(p)
 }
 
 
-#' Visualisation des scouts dans les données
+#' Visualization of scout features overlaid on precursor ions
 #'
-#' @param data données sur les paires d'ions
-#' @param Scout données sur les scouts
+#' @description
+#' Overlay identified scout ions on top of all detected precursor features.
 #'
-#' @return un graphique plotly
+#' @param data A data frame containing ion pair results.
+#' @param Scout A data frame containing scout search results.
+#'
+#' @return An interactive plotly scatter plot.
 #' @export
-#'
-Viz_spectra_mz_rt_with_Scout <- function(data,Scout){
+Viz_spectra_mz_rt_with_Scout <- function(data, Scout) {
 
-  PrecursorIntensity <- data[["Q1.intensity"]]
-  RetentionTime <- data[["rt.secondes"]]
-  PrecursorMz <- data[["mz.precursor"]]
+  required_data <- c("Q1.intensity", "rt.seconds", "mz.precursor", "Name")
+  if (!all(required_data %in% colnames(data)))
+    stop("Missing required columns in 'data'. Expected: ", paste(required_data, collapse = ", "))
 
-  numpeak <- data[["CPname"]]
-  data_plot <- as.data.frame(cbind(PrecursorMz,
-                                    PrecursorIntensity,
-                                    RetentionTime,
-                                    numpeak))
+  required_scout <- c("mz.precursor", "rt.seconds", "Scout")
+  if (!all(required_scout %in% colnames(Scout)))
+    stop("Missing required columns in 'Scout'. Expected: ", paste(required_scout, collapse = ", "))
 
-  t <- plotly::plot_ly(mode = 'markers',type = 'scatter')
+  df <- data.frame(
+    mz = data$mz.precursor,
+    rt = data$rt.seconds / 60,
+    intensity = data$Q1.intensity,
+    label = data$Name,
+    stringsAsFactors = FALSE
+  )
 
-  t <- plotly::add_trace(t,data_plot,x=as.double(data_plot$RetentionTime),y=as.double(data_plot$PrecursorMz),size=as.double(data_plot$PrecursorIntensity),text=data_plot$numpeak)
-  t <- plotly::add_trace(t,Scout,x=as.double(Scout$rt.secondes),y=as.double(Scout$mz.precursor),text=Scout$scout,marker = list(size=10,color = 'rgba(29, 146, 30, 0.8)'))
-  t <- plotly::layout(t,xaxis = list(title = 'Retention time'),
-                      yaxis = list(title = 'm/z precursor'))
-    return(t)
+  p <- plotly::plot_ly(type = "scatter", mode = "markers")
 
+  p <- plotly::add_trace(
+    p,
+    data = df,
+    x = ~rt, y = ~mz,
+    text = ~label,
+    name = "Other precursors",
+    marker = list(size = 10)
+  )
+  p <- plotly::add_trace(
+    p,
+    data = Scout,
+    x = ~rt.seconds / 60,
+    y = ~mz.precursor,
+    text = ~Scout,
+    name = "Scout",
+    marker = list(size = 12, color = "rgba(29,146,30,0.8)")
+  )
+
+  p <- plotly::layout(
+    p,
+    xaxis = list(title = "Retention time (min)"),
+    yaxis = list(title = "m/z")
+  )
+
+  return(p)
 }

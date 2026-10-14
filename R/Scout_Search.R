@@ -1,41 +1,70 @@
-#' Trouve les scouts dans les paires d'ions basés sur les m/z précurseurs, fragment et les ordres d'élution
+#' Identify scout transitions from a database within detected ion pairs
 #'
-#' @param database_scout Base de données des scouts
-#' @param Ion_pairs Paires d'ions détectées dans les spectres issus de la fonction [Generate_ions_pairs()]
-#' @param tolerance_MS Tolérance sur le rapport m/z des précurseurs et fragments
+#' @param database_scout Data.frame containing known scout transitions
+#'   Must include Q1.Mass, Q3.Mass, Name
+#'   Optional: DP, EP, CE, CXP, Order
+#' @param Ion_pairs Data.frame from Generate_ions_pairs()
+#' @param ppm_Q1 PPM tolerance for precursor m/z
+#' @param ppm_Q3 PPM tolerance for fragment m/z
+#' @param Show Logical. Print progress messages.
 #'
-#' @return Un dataframe avec les scouts identifiés
+#' @return A data.frame of matched scout transitions (possibly empty)
 #' @export
-#'
+Scout_Search <- function(database_scout,
+                         Ion_pairs,
+                         ppm_Q1 = 10,
+                         ppm_Q3 = 10,
+                         Show = FALSE) {
 
-Scout_Search <- function(database_scout, Ion_pairs, tolerance_MS = 0.01) {
-  Scout_found <- data.frame()
+  required_db_cols <- c("Q1.Mass", "Q3.Mass", "Name")
+  if (!all(required_db_cols %in% colnames(database_scout)))
+    stop("database_scout must contain columns: Q1.Mass, Q3.Mass, Name")
 
-  for (i in 1:length(database_scout[,'Q1.Mass'])) {
-    cat(paste("Recherche de la transition:", database_scout[i, 'Name'], "\n", sep = " "))
-    match_MS1 <- data.frame()
+  required_ip_cols <- c("mz.precursor", "mz.product")
+  if (!all(required_ip_cols %in% colnames(Ion_pairs)))
+    stop("Ion_pairs must contain columns: mz.precursor, mz.product")
 
-    for (j in 1:length(Ion_pairs[,1])) {
-      if (abs(database_scout[i, 'Q1.Mass'] - Ion_pairs[j, "mz.precursor"]) < tolerance_MS) {
-        match_MS1 <- rbind(match_MS1, data.frame(Ion_pairs[j,], database_scout[i, 3], database_scout[i, 6], database_scout[i, 7], database_scout[i, 8], database_scout[i, 9]))
-      }
-    }
+  optional_cols <- c("DP", "EP", "CE", "CXP", "Order")
+  opt_present <- optional_cols[optional_cols %in% colnames(database_scout)]
 
-    if (nrow(match_MS1) > 0) {
-      for (l in 1:length(match_MS1[, 1])) {
-        if (abs(match_MS1[l, "mz.product"] - database_scout[i, 'Q3.Mass']) < tolerance_MS) {
-          Scout_found <- rbind(Scout_found, match_MS1[l, ])
-          cat(database_scout[i, 'Name'], " found\n", sep = " ")
-        }
-      }
-    }
+  ppm_diff <- function(measured, theoretical) {
+    abs(measured - theoretical) / theoretical * 1e6
   }
 
-  if (nrow(Scout_found) == 0) {
-    stop("0 scout found")
-  } else {
-    colnames(Scout_found) <- c("CPname", "mz.precursor", "mz.product", "Q1.intensity", "Q3.intensity", "rt.minutes", "rt.secondes", "scout", "DP", "EP", "CE", "CXP")
-    Scout_found <- Clear_Scout(Scout_found)
-    return(Scout_found)
+  results <- lapply(seq_len(nrow(database_scout)), function(i) {
+    scout <- database_scout[i, ]
+
+    if (Show) {
+      message(sprintf("Searching transition: %s", scout$Name))
+    }
+
+    match_precursor <- ppm_diff(Ion_pairs$mz.precursor, scout$Q1.Mass) <= ppm_Q1
+    if (!any(match_precursor)) return(NULL)
+
+    candidates <- Ion_pairs[match_precursor, ]
+
+    match_fragment <- ppm_diff(candidates$mz.product, scout$Q3.Mass) <= ppm_Q3
+    matched <- candidates[match_fragment, ]
+    if (nrow(matched) == 0) return(NULL)
+
+    matched$Scout <- scout$Name
+    if (length(opt_present) > 0) {
+      matched[opt_present] <- scout[opt_present]
+    }
+
+    matched
+  })
+
+  result <- do.call(rbind, results)
+
+  if (is.null(result)) {
+    if (Show) message("No scouts found.")
+    return(data.frame())
   }
+
+  rownames(result) <- NULL
+
+  if (Show) message("Scout matching completed.")
+
+  return(result)
 }

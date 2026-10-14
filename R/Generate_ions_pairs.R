@@ -1,63 +1,60 @@
-#' Génère les paires d'ions
+#' Generate ion pairs from a Spectra object
 #'
-#' @param Spectrum Un objet spectra qui contient les données de spectres de masse
-#' @param Pairs_by_precursor Nombre de paires d'ions par précurseur (par défaut 3)
+#' @param Spectrum A Spectra object containing MS/MS data
+#' @param pairs_per_precursor Number of fragment ion pairs to keep per precursor (positive integer)
+#' @param min_mass Minimum fragment m/z to consider
+#' @param max_mass Maximum fragment m/z to consider. If "precursor", will use precursor m/z for each spectrum.
+#' @param Spectra_name Character. Column name defining unique precursor features (default: "feature_id")
 #'
-#' @return Un data frame avec les paires d'ions contenant les informations sur le précurseur et les ions produits
+#' @return A data.frame containing precursor/product m/z, intensities, and retention times
 #' @export
-#'
+Generate_ions_pairs <- function(Spectrum,
+                                pairs_per_precursor = 3L,
+                                min_mass = 0,
+                                max_mass = "precursor",
+                                Spectra_name = "feature_id") {
 
-Generate_ions_pairs <- function(Spectrum, Pairs_by_precursor = 3) {
-  # Extraction des identifiants des pics du spectre
-  CPnames <- Spectrum$peak_id
-  ions_pairs <- data.frame()
+  if (!inherits(Spectrum, "Spectra"))
+    stop("Input must be a Spectra object.")
 
-  # Boucle à travers chaque identifiant de pic
-  for (CPname in CPnames) {
-    # Filtrer les spectres pour obtenir uniquement ceux avec l'identifiant de pic courant
-    Swath_spectrum <- Spectrum[Spectrum$peak_id == CPname, ]
-    # Filtrer les fragments en dessous de la masse du précurseur
-    Swath_spectrum <- Spectra::filterMzRange(Swath_spectrum, mz = c(0, Spectra::precursorMz(Swath_spectrum)))
-    fragment_mz <- Spectra::peaksData(Swath_spectrum)[[1]]
-    PrecursorMz <- Spectra::precursorMz(Swath_spectrum)
-    PrecursorRt <- Spectra::rtime(Swath_spectrum)
-    PrecursorIntensity <- Spectra::precursorIntensity(Swath_spectrum)
+  if (!is.numeric(pairs_per_precursor) || pairs_per_precursor %% 1 != 0 || pairs_per_precursor <= 0)
+    stop("`pairs_per_precursor` must be a positive integer.")
 
-    # Si des fragments sont présents, ajouter les informations au data frame des paires d'ions
-    if (length(fragment_mz) > 0) {
-      ions_pairs <- rbind(ions_pairs, data.frame(
-        CPname,
-        PrecursorMz,
-        PrecursorRt,
-        PrecursorIntensity,
-        fragment_mz
-      ))
-    }
-  }
+  if (!Spectra_name %in% colnames(Spectra::spectraData(Spectrum)))
+    stop(paste("Column", Spectra_name, "not found in spectra metadata."))
 
-  # Sélectionner les paires d'ions en fonction de l'intensité, en gardant les plus intenses
-  trans.spec <- lapply(unique(ions_pairs[, 'CPname']), function(idx) {
-    info <- ions_pairs[ions_pairs[, 'CPname'] == idx, , drop = FALSE]
-    info <- info[order(info[, 'intensity'], decreasing = TRUE)[1:Pairs_by_precursor], ]
+  split_spectra <- split(Spectrum, f = Spectra::spectraData(Spectrum)[[Spectra_name]])
+
+  ions_list <- lapply(names(split_spectra), function(id) {
+    spec <- split_spectra[[id]]
+
+    precursor_mz <- precursorMz(spec)[1]
+    precursor_rt <- rtime(spec)[1]
+    precursor_int <- precursorIntensity(spec)[1]
+
+    local_max_mass <- if (identical(max_mass, "precursor")) precursor_mz else max_mass
+
+    spec_filter <- filterMzRange(spec, mz = c(min_mass, local_max_mass))
+    peaks <- Spectra::peaksData(spec_filter)[[1]]
+    if (is.null(peaks) || nrow(peaks) == 0) return(NULL)
+
+    df <- data.frame(
+      Name = id,
+      mz.precursor = precursor_mz,
+      mz.product = peaks[, 1],
+      Q1.intensity = precursor_int,
+      Q3.intensity = peaks[, 2],
+      rt = precursor_rt
+    )
+
+    df[order(df$Q3.intensity, decreasing = TRUE), ][seq_len(min(pairs_per_precursor, nrow(df))), ]
   })
-  dt.trans <- do.call(rbind, trans.spec)
 
-  # Retirer les lignes avec des valeurs manquantes
-  dt.trans <- dt.trans[stats::complete.cases(dt.trans), ]
+  ion_pairs <- do.call(rbind, ions_list)
 
-  # Créer le data frame final avec les colonnes souhaitées et arrondir certaines valeurs
-  result.df <- data.frame(
-    dt.trans[, 1],  # CPname
-    dt.trans[, 2],  # mz.precursor
-    dt.trans[, 5],  # mz.product
-    round(dt.trans[, 4], 3),  # Q1.intensity
-    round(dt.trans[, 6], 3),  # Q3.intensity
-    round(dt.trans[, 3] / 60, 2),  # rt.minutes
-    round(dt.trans[, 3], 2)  # rt.secondes
-  )
+  ion_pairs$rt.minutes <- round(ion_pairs$rt / 60, 2)
+  ion_pairs$rt.seconds <- round(ion_pairs$rt, 2)
+  ion_pairs$rt <- NULL
 
-  # Renommer les colonnes du data frame final
-  colnames(result.df) <- c("CPname", "mz.precursor", "mz.product", "Q1.intensity", "Q3.intensity", "rt.minutes", "rt.secondes")
-
-  return(result.df)
+  return(ion_pairs)
 }

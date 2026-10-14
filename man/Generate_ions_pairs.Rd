@@ -2,18 +2,30 @@
 % Please edit documentation in R/Generate_ions_pairs.R
 \name{Generate_ions_pairs}
 \alias{Generate_ions_pairs}
-\title{Génère les paires d'ions}
+\title{Generate ion pairs from a Spectra object}
 \usage{
-Generate_ions_pairs(Spectrum, Pairs_by_precursor = 3)
+Generate_ions_pairs(
+  Spectrum,
+  pairs_per_precursor = 3L,
+  min_mass = 0,
+  max_mass = "precursor",
+  Spectra_name = "feature_id"
+)
 }
 \arguments{
-\item{Spectrum}{Un objet spectra qui contient les données de spectres de masse}
+\item{Spectrum}{A Spectra object containing MS/MS data}
 
-\item{Pairs_by_precursor}{Nombre de paires d'ions par précurseur (par défaut 3)}
+\item{pairs_per_precursor}{Number of fragment ion pairs to keep per precursor (positive integer)}
+
+\item{min_mass}{Minimum fragment m/z to consider}
+
+\item{max_mass}{Maximum fragment m/z to consider. If "precursor", will use precursor m/z for each spectrum.}
+
+\item{Spectra_name}{Character. Column name defining unique precursor features (default: "feature_id")}
 }
 \value{
-Un data frame avec les paires d'ions contenant les informations sur le précurseur et les ions produits
+A data.frame containing precursor/product m/z, intensities, and retention times
 }
 \description{
-Génère les paires d'ions
+Generate ion pairs from a Spectra object
 }

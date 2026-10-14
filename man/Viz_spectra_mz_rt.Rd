@@ -2,18 +2,20 @@
 % Please edit documentation in R/Viz_Spectra_information.R
 \name{Viz_spectra_mz_rt}
 \alias{Viz_spectra_mz_rt}
-\title{Visualisation des données}
+\title{Visualization of detected precursor ions}
 \usage{
-Viz_spectra_mz_rt(data, peak_id = FALSE)
+Viz_spectra_mz_rt(data, feature_id = FALSE, size = FALSE)
 }
 \arguments{
-\item{data}{un Spectra object}
+\item{data}{A Spectra object containing precursor metadata.}
 
-\item{peak_id}{Affiche le nom des spectres}
+\item{feature_id}{Logical. Display feature identifiers as tooltip labels if TRUE.}
+
+\item{size}{Logical. Use precursor intensity to scale marker size if TRUE.}
 }
 \value{
-un graphique plotly
+An interactive plotly scatter plot.
 }
 \description{
-Visualisation des données
+Interactive visualization of MS precursor ions in an m/z vs retention time space.
 }
